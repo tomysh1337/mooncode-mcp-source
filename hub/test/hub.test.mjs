@@ -120,6 +120,17 @@ test('web API streams responses, requires token and rejects cross-origin request
   assert.equal(hub.list().length, 0);
 });
 
+test('cancelling at agent creation revokes the partially started link', async t => {
+  const { workspace, hub } = await fixture(t);
+  const adapter = { async *stream() { throw new Error('Should not be reached'); } };
+  const run = new WebOrchestrator({ hub, workspace, adapter }).run('cancel immediately');
+  assert.equal((await run.next()).value.type, 'skills');
+  assert.equal((await run.next()).value.type, 'agent.started');
+  assert.equal(hub.list().length, 1);
+  await run.return();
+  assert.equal(hub.list().length, 0);
+});
+
 test('native PTY command execution on Linux', { skip: process.platform !== 'linux' }, async t => {
   const { workspace, hub } = await fixture(t);
   const link = await hub.create({ workspace, allowWrite: true, allowExec: true });

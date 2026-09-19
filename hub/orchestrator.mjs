@@ -45,12 +45,12 @@ export class WebOrchestrator {
     const link = await this.hub.create({ name: `agent-${agentId.slice(0, 8)}`, kind, ttl: 3600,
       workspace: kind === 'workspace' ? this.workspace : undefined,
       allowWrite: kind === 'workspace' && this.allowWrite, allowExec: kind === 'workspace' && this.allowExec });
-    yield { type: 'agent.started', agentId, parentDepth: depth, link };
     let client;
     const seen = new Set();
     let images = [];
     let prompt = `${instructions(skills, link)}\n${skills.filter(s => selected.includes(s.path) || s.path === 'AGENTS.md').map(s => `PROJECT SKILL ${s.path}:\n${s.content}`).join('\n')}\nUSER REQUEST:\n${task}`;
     try {
+      yield { type: 'agent.started', agentId, parentDepth: depth, link };
       // Local orchestration uses the loopback route even when the link advertised to ChatGPT is HTTPS.
       const localUrl = `${this.hub.origin}${new URL(link.url).pathname}`;
       client = await connect(localUrl);

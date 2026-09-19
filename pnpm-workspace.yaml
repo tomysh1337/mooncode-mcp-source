@@ -8,5 +8,5 @@ packages:
   - extension
   - hub
 
-onlyBuiltDependencies:
-  - node-pty
+allowBuilds:
+  node-pty: true
