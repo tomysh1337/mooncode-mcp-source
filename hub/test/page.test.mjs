@@ -41,3 +41,18 @@ test('default MCP setup locates form labels and confirms the created app', async
   assert.equal(await page.locator('select').inputValue(), 'No authentication');
   assert.equal(await page.locator('#url').inputValue(), 'https://mcp.example.com/mcp/' + 'B'.repeat(43));
 });
+
+test('rendered action code blocks survive Markdown fence removal', async t => {
+  const profile = await mkdtemp(join(tmpdir(), 'mooncode-codeblock-test-'));
+  const website = await listen((_req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(`<textarea id="prompt-textarea"></textarea><button data-testid="send-button" onclick="const p=document.createElement('div');p.setAttribute('data-message-author-role','assistant');p.innerHTML=document.querySelector('template').innerHTML;document.body.append(p)">Send</button><template><pre><code class="language-mooncode-action">{"id":"tools-1","type":"list_tools"}</code></pre><pre><code class="language-json">{"id":"example","type":"tool_call"}</code></pre></template>`);
+  });
+  const adapter = await new ChatGPTPageAdapter({ profile, url: website.origin }).start();
+  t.after(async () => { await adapter.close(); await website.close(); await rm(profile, { recursive: true, force: true }); });
+  let final;
+  for await (const event of adapter.stream('list tools')) if (event.type === 'done') final = event;
+  assert.equal(final.actions.length, 1);
+  assert.equal(JSON.parse(final.actions[0]).type, 'list_tools');
+  assert.ok(!final.text.includes('```'));
+});

@@ -57,12 +57,13 @@ export class WebOrchestrator {
       for (let round = 0; round < this.maxRounds; round++) {
         signal?.throwIfAborted();
         let complete;
+        let renderedActions;
         for await (const chunk of this.adapter.stream(prompt, { agentId, signal, images })) {
-          if (chunk.type === 'done') complete = chunk.text;
+          if (chunk.type === 'done') { complete = chunk.text; renderedActions = chunk.actions; }
           yield { ...chunk, type: chunk.type === 'done' ? 'message.done' : chunk.type, agentId };
         }
         if (complete === undefined) throw new Error('Web adapter ended without a complete response');
-        const action = parseAction(complete);
+        const action = parseAction(renderedActions?.length ? renderedActions.map(a => '```mooncode-action\n' + a + '\n```').join('\n') : complete);
         if (!action) { yield { type: 'agent.done', agentId, text: complete }; return; }
         if (seen.has(action.id)) throw new Error('Repeated action id; action was not executed twice');
         seen.add(action.id);

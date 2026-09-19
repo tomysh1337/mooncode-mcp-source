@@ -124,7 +124,17 @@ export class ChatGPTPageAdapter {
             stableSince = Date.now();
           }
           const busy = await page.locator(this.selectors.stop).isVisible().catch(() => false);
-          if (previous && !busy && Date.now() - stableSince >= 2500) { yield { type: 'done', text: previous }; return; }
+          if (previous && !busy && Date.now() - stableSince >= 2500) {
+            // Rendered Markdown omits the backticks in innerText. Recover explicitly
+            // labelled action blocks from DOM instead of treating arbitrary JSON as a command.
+            const actions = await messages.last().locator('pre').evaluateAll(blocks => blocks.flatMap(pre => {
+              const code = pre.querySelector('code');
+              const marked = code?.classList.contains('language-mooncode-action') || pre.getAttribute('data-language') === 'mooncode-action'
+                || /^\s*mooncode-action(?:\s|$)/.test(pre.parentElement?.innerText ?? '');
+              return marked && code ? [code.innerText] : [];
+            }));
+            yield { type: 'done', text: previous, actions }; return;
+          }
         }
         await delay(150, undefined, { signal });
       }
