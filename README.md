@@ -1,6 +1,10 @@
 # 正义开源付费项目
 
-MoonCode 本地 MCP Bridge 的 TypeScript 源码整理版。本仓库仅包含源码、包清单和构建配置，不包含 Source Map、逆向分析报告或预编译产物。
+MoonCode MCP Bridge 源码与 Linux 运行工具。新增链接管理、无头浏览器、Linux 虚拟桌面、项目 skills 扫描、subagent 字段调度和 ChatGPT 网页适配器。
+
+**Linux 使用与验收：[完整教程](docs/linux.md)。** Linux 入口是 `hub/cli.mjs`，网页代理入口是 `hub/web.mjs`；运行包通过 GitHub Actions 构建，源码仓库不包含二进制产物或 Source Map。
+
+Linux Hub 支持持续创建/撤销链接，默认 16 个并发链接，取消了自动 Cloudflare 流程，可接自己的 HTTPS 反向代理。下面的原始 Bridge 教程保留了原 runtime 的隧道参数，和新增 Hub 是不同入口。
 
 ## 目录结构
 
@@ -218,4 +222,4 @@ pnpm start -- `
 
 ## 说明
 
-本仓库保留整理时得到的 TypeScript 源码实现，新增内容仅包括 workspace 构建配置和本使用教程。仓库中没有 Source Map 文件。
+原 TypeScript Bridge 实现位于 `runtime`、`contracts`、`tool-gateway` 等目录；新增 Linux、浏览器和网页代理源码位于 `hub`、`linux`、`scripts`，使用教程位于 `docs`。仓库中没有 Source Map 文件。

@@ -1,0 +1,14 @@
+{
+  "name": "@mooncode/mcp-hub",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "dependencies": {
+    "@mooncode/agent-runtime": "workspace:*",
+    "@modelcontextprotocol/client": "2.0.0",
+    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/node": "2.0.0",
+    "playwright": "1.63.0"
+  }
+}

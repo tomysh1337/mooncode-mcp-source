@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { listen } from '../http.mjs';
+import { ChatGPTPageAdapter } from '../chatgpt.mjs';
+
+test('browser adapter streams visible text and verifies MCP connection UI on a fixture', async t => {
+  const profile = await mkdtemp(join(tmpdir(), 'mooncode-page-test-'));
+  const website = await listen((_req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(`<textarea id="prompt-textarea"></textarea><button data-testid="send-button" onclick="send()">Send</button><button data-testid="stop-button" style="display:none">Stop</button><div id="messages"></div><input id="mcp-url"><button id="save" onclick="document.querySelector('#connected').textContent=document.querySelector('#mcp-url').value;document.querySelector('#connected').hidden=false">Save</button><p id="connected" hidden></p><script>function send(){const stop=document.querySelector('[data-testid=stop-button]');stop.style.display='block';const p=document.createElement('div');p.setAttribute('data-message-author-role','assistant');document.querySelector('#messages').append(p);p.textContent='first';setTimeout(()=>{p.textContent+=' second';stop.style.display='none'},400)}</script>`);
+  });
+  const adapter = await new ChatGPTPageAdapter({ profile, url: website.origin }).start();
+  t.after(async () => { await adapter.close(); await website.close(); await rm(profile, { recursive: true, force: true }); });
+  const events = [];
+  for await (const event of adapter.stream('hello')) events.push(event);
+  assert.equal(events.at(-1).text, 'first second');
+  assert.ok(events.filter(e => e.type === 'delta').length >= 2);
+  const result = await adapter.connectMcp({ url: 'https://mcp.example.com/mcp/' + 'A'.repeat(43), steps: [
+    { action: 'fill', selector: '#mcp-url', value: '{MCP_URL}' },
+    { action: 'click', selector: '#save' },
+    { action: 'wait', selector: '#connected' },
+  ] });
+  assert.equal(result.status, 'ui-confirmed');
+  assert.match(await (await adapter.page('settings')).locator('#connected').innerText(), /mcp.example.com/);
+});

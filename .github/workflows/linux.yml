@@ -1,0 +1,41 @@
+name: Linux build and acceptance
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: sudo apt-get update && sudo apt-get install -y xvfb xdotool imagemagick
+      - run: pnpm --filter @mooncode/mcp-hub exec playwright install --with-deps chromium
+      - run: pnpm test
+      - run: node scripts/pack-linux.mjs --bundle
+      - name: Verify relocated Linux package
+        run: |
+          mkdir /tmp/mooncode-acceptance
+          tar -xzf artifacts/mooncode-linux-x64.tar.gz -C /tmp/mooncode-acceptance
+          cd /tmp/mooncode-acceptance/mooncode-linux-x64
+          bash start.sh --help
+          bash start-web.sh --help
+          export PLAYWRIGHT_BROWSERS_PATH="$PWD/browsers"
+          "$PWD/bin/node" "$GITHUB_WORKSPACE/scripts/verify-package.mjs" "$PWD"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mooncode-linux-x64
+          path: |
+            artifacts/*.tar.gz
+            artifacts/*.sha256
+          retention-days: 30

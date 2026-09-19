@@ -3,6 +3,9 @@
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "scripts": {
+    "hub": "node hub/cli.mjs",
+    "test": "node --test hub/test/*.test.mjs",
+    "pack:linux": "node scripts/pack-linux.mjs",
     "build": "tsc -b contracts event-store model-fake model-openai tool-gateway runtime extension",
     "clean": "tsc -b --clean contracts event-store model-fake model-openai tool-gateway runtime extension",
     "start": "node runtime/dist/cli.js --bridge"

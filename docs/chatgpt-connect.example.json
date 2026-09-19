@@ -1,0 +1,11 @@
+{
+  "note": "Example recipe, not verified against your ChatGPT account. Replace selectors/labels with the actual UI; the final wait must assert a connected/success state.",
+  "steps": [
+    { "action": "goto", "value": "/#settings/Connectors" },
+    { "action": "click", "role": "button", "name": "Create app" },
+    { "action": "fill", "selector": "input[name=name]", "value": "{APP_NAME}" },
+    { "action": "fill", "selector": "input[name=url]", "value": "{MCP_URL}" },
+    { "action": "click", "role": "button", "name": "Create" },
+    { "action": "wait", "selector": "[data-testid=app-connected]" }
+  ]
+}

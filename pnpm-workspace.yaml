@@ -6,3 +6,7 @@ packages:
   - tool-gateway
   - runtime
   - extension
+  - hub
+
+onlyBuiltDependencies:
+  - node-pty
