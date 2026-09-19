@@ -27,7 +27,6 @@ export async function startWebService({ hub, adapter, workspace, port = 48400, c
       if (busy) return json(res, 409, { error: 'A request is running' });
       busy = true;
       try {
-        if (!connectSteps) throw new Error('Set --connect-config to the account\'s connection UI recipe');
         const link = await hub.create({ kind: 'workspace', workspace, name: 'ChatGPT', ttl: 0, allowWrite, allowExec });
         try {
           const result = await adapter.connectMcp({ url: link.url, name: 'MoonCode', steps: connectSteps });

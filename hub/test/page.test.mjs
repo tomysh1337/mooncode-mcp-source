@@ -26,3 +26,18 @@ test('browser adapter streams visible text and verifies MCP connection UI on a f
   assert.equal(result.status, 'ui-confirmed');
   assert.match(await (await adapter.page('settings')).locator('#connected').innerText(), /mcp.example.com/);
 });
+
+test('default MCP setup locates form labels and confirms the created app', async t => {
+  const profile = await mkdtemp(join(tmpdir(), 'mooncode-connect-test-'));
+  const website = await listen((_req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(`<button onclick="document.querySelector('[role=dialog]').hidden=false">Create app</button><div role="dialog" hidden><label>Name<input id="name"></label><label>MCP Server URL<input id="url"></label><label>Authentication<select><option>OAuth</option><option>No authentication</option></select></label><label><input type="checkbox">I understand the risk</label><button onclick="document.querySelector('#app').textContent=document.querySelector('#name').value;document.querySelector('[role=dialog]').hidden=true">Create</button></div><p id="app"></p>`);
+  });
+  const adapter = await new ChatGPTPageAdapter({ profile, url: website.origin }).start();
+  t.after(async () => { await adapter.close(); await website.close(); await rm(profile, { recursive: true, force: true }); });
+  const result = await adapter.connectMcp({ url: 'https://mcp.example.com/mcp/' + 'B'.repeat(43) });
+  assert.equal(result.status, 'ui-confirmed');
+  const page = await adapter.page('settings');
+  assert.equal(await page.locator('select').inputValue(), 'No authentication');
+  assert.equal(await page.locator('#url').inputValue(), 'https://mcp.example.com/mcp/' + 'B'.repeat(43));
+});

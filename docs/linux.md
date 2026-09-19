@@ -119,7 +119,9 @@ bash start-web.sh serve --workspace /home/you/project
 
 登录态保存在专用 profile，默认 `~/.local/state/mooncode-hub/chatgpt-profile`。登录会话过期、登录挑战或网站验证需要用户在有界面模式处理。服务默认不启动公网隧道。
 
-自动配置 MCP 地址需要两项前提：可从外部访问的 HTTPS MCP origin，以及与当前账号页面一致的连接 UI recipe：
+自动配置 MCP 地址需要可从外部访问的 HTTPS MCP origin，以及在 ChatGPT Apps 高级设置中启用 Developer mode。默认适配器按中英文表单标签查找“创建应用”、名称、MCP URL、无认证选项，提交后确认应用名称出现在设置中。它会在字段缺失时停止并报告具体阶段。
+
+账号界面与默认标签不一致时，可提供连接 UI recipe：
 
 ```bash
 bash start-web.sh serve --workspace /home/you/project \
@@ -127,7 +129,7 @@ bash start-web.sh serve --workspace /home/you/project \
   --connect-config /path/to/my-chatgpt-connect.json
 ```
 
-在本地控制台点击“配置 ChatGPT MCP 连接”。服务会创建链接，按 recipe 打开设置、填写地址、保存，并等待明确的成功元素出现。`docs/chatgpt-connect.example.json` 是适配格式示例，里面的标签/选择器尚未针对你的账号验证，需按真实界面替换。末项 `wait` 必须指向已连接的成功状态。仅点击保存不算配置成功。
+在本地控制台点击“配置 ChatGPT MCP 连接”。服务会创建链接，打开设置、填写地址、保存并检查完成状态。默认标签策略尚待你的真实账号验证。`docs/chatgpt-connect.example.json` 是 recipe 格式示例，里面的标签/选择器也需按真实界面替换；末项 `wait` 必须指向已连接的成功状态。仅点击保存不算配置成功。
 
 网页请求通过 `#prompt-textarea` 和发送按钮提交；回答从可见 assistant DOM 读取并转成 SSE 增量。它是网页文本的增量采样，不是服务端 token 原生流。若页面 UI 更新，可通过 `--selectors FILE` 替换 `prompt`、`send`、`assistant`、`stop`、`upload` 选择器。多段 Markdown 渲染可能发出 `replace` 事件，客户端已处理。
 

@@ -40,6 +40,7 @@ export class ChatGPTPageAdapter {
   }
   async connectMcp({ url, name = 'MoonCode', steps }) {
     if (new URL(url).protocol !== 'https:') throw new Error('ChatGPT requires a reachable HTTPS MCP URL; configure --public-origin and your reverse proxy');
+    if (!steps) return this.connectMcpByLabels(url, name);
     if (!Array.isArray(steps) || !steps.length) throw new Error('Provide a connection UI recipe (--connect-config); site UI varies by account');
     if (steps.at(-1).action !== 'wait') throw new Error('Connection recipe must end with a visible success check');
     const page = await this.page('settings');
@@ -62,6 +63,37 @@ export class ChatGPTPageAdapter {
     }
     // A final visible assertion is mandatory: clicking Save alone is not success.
     if (steps.at(-1).action !== 'wait') throw new Error('Connection recipe must end with a visible success check');
+    return { status: 'ui-confirmed', name };
+  }
+  async connectMcpByLabels(url, name) {
+    const page = await this.page('settings');
+    await page.goto(new URL('/#settings/Connectors', this.options.url).href, { waitUntil: 'domcontentloaded' });
+    const create = page.getByRole('button', { name: /^(Create app|Create connector|创建应用|创建连接器)$/i });
+    try { await create.first().waitFor({ state: 'visible', timeout: 10000 }); }
+    catch { throw new Error('CHATGPT_APP_SETUP_REQUIRED: enable Developer mode in Apps/Advanced settings, or supply --connect-config for this UI'); }
+    await create.first().click();
+    const dialog = page.getByRole('dialog').last();
+    await dialog.waitFor({ state: 'visible' });
+    await dialog.getByRole('textbox', { name: /^(Name|名称|应用名称)$/i }).fill(name);
+    await dialog.getByRole('textbox', { name: /MCP.*(URL|网址|地址)|Server URL|服务器.*地址/i }).fill(url);
+    const auth = dialog.getByRole('combobox', { name: /authentication|身份验证|认证/i });
+    if (await auth.count()) {
+      if (await auth.evaluate(el => el.tagName === 'SELECT')) {
+        const label = await auth.locator('option').allTextContents();
+        const none = label.find(x => /no authentication|无身份验证|无需认证|无认证/i.test(x));
+        if (!none) throw new Error('No-auth capability URL option missing in ChatGPT UI');
+        await auth.selectOption({ label: none });
+      } else {
+        await auth.click();
+        await page.getByRole('option', { name: /no authentication|无身份验证|无需认证|无认证/i }).click();
+      }
+    }
+    const acknowledge = dialog.getByRole('checkbox', { name: /understand|trust|了解|信任|风险/i });
+    if (await acknowledge.count()) await acknowledge.first().check();
+    await dialog.getByRole('button', { name: /^(Create|Add|创建|添加)$/i }).click();
+    await dialog.waitFor({ state: 'hidden', timeout: 45000 });
+    // Require the created app to be visible after the form closes.
+    await page.getByText(name, { exact: true }).first().waitFor({ state: 'visible', timeout: 30000 });
     return { status: 'ui-confirmed', name };
   }
   async *stream(prompt, { agentId = 'main', signal, images = [] } = {}) {
