@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "out",
+    "types": ["node", "vscode"],
+    "skipLibCheck": true,
+    "module": "commonjs",
+    "target": "ES2022",
+    "esModuleInterop": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "composite": true
+  },
+  "include": ["*.ts"]
+}

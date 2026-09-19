@@ -1,0 +1,8 @@
+packages:
+  - contracts
+  - event-store
+  - model-fake
+  - model-openai
+  - tool-gateway
+  - runtime
+  - extension

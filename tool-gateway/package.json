@@ -1,0 +1,1 @@
+{"name":"@mooncode/tool-gateway","version":"0.1.0","private":true,"type":"module","main":"dist/index.js","types":"dist/index.d.ts","dependencies":{"@mooncode/contracts":"workspace:*","ignore":"7.0.8","node-pty":"1.2.0-beta.15","safe-regex2":"5.1.1"}}

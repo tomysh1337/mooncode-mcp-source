@@ -1,0 +1,15 @@
+{
+  "name": "mooncode-mcp-source",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "build": "tsc -b contracts event-store model-fake model-openai tool-gateway runtime extension",
+    "clean": "tsc -b --clean contracts event-store model-fake model-openai tool-gateway runtime extension",
+    "start": "node runtime/dist/cli.js --bridge"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.136.0",
+    "typescript": "^5.9.2"
+  }
+}

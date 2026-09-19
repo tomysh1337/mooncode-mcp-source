@@ -1,0 +1,12 @@
+node_modules/
+dist/
+out/
+*.tsbuildinfo
+*.map
+*.zip
+SOURCE_MAP.md
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example

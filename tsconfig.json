@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./contracts" },
+    { "path": "./event-store" },
+    { "path": "./model-fake" },
+    { "path": "./model-openai" },
+    { "path": "./tool-gateway" },
+    { "path": "./runtime" },
+    { "path": "./extension" }
+  ]
+}
