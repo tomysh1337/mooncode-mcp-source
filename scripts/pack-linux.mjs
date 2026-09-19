@@ -26,7 +26,7 @@ for (const name of packages) {
   // cp of hub includes its original manifest; restore the workspace-compatible one.
   await writeFile(join(folder, 'package.json'), JSON.stringify(manifest, null, 2));
 }
-await writeFile(join(stage, 'package.json'), JSON.stringify({ name: label, version: '0.2.0', private: true, type: 'module', workspaces: packages, engines: { node: '>=22.12' } }, null, 2));
+await writeFile(join(stage, 'package.json'), JSON.stringify({ name: label, version: '0.3.0', private: true, type: 'module', workspaces: packages, engines: { node: '>=22.12' } }, null, 2));
 for (const file of ['start.sh', 'start-browser.sh', 'start-web.sh', 'setup.sh']) {
   await cp(join(root, 'linux', file), join(stage, file));
   await chmod(join(stage, file), 0o755);

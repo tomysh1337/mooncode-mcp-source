@@ -2,6 +2,8 @@
 
 MoonCode MCP Bridge 源码与 Linux 运行工具。新增链接管理、无头浏览器、Linux 虚拟桌面、项目 skills 扫描、subagent 字段调度和 ChatGPT 网页适配器。
 
+v0.3.0 增加网页数量设置、Sub2API / CPA 账号 JSON 导入、账号启停和通过 CPA 提供的 OpenAI 兼容 API。详见[服务器与账号配置](docs/server.md)。配置与账号凭据保存在运行目录，不随源码分发。
+
 **Linux 使用与验收：[完整教程](docs/linux.md)。** Linux 入口是 `hub/cli.mjs`，网页代理入口是 `hub/web.mjs`；运行包通过 GitHub Actions 构建，源码仓库不包含二进制产物或 Source Map。
 
 Linux Hub 支持持续创建/撤销链接，默认 16 个并发链接，取消了自动 Cloudflare 流程，可接自己的 HTTPS 反向代理。下面的原始 Bridge 教程保留了原 runtime 的隧道参数，和新增 Hub 是不同入口。

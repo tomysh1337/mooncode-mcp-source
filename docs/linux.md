@@ -2,6 +2,8 @@
 
 本版本新增三个可独立运行的入口：MCP 链接管理、浏览器/虚拟桌面 MCP、ChatGPT 网页代理。Cloudflare 已退出本版本的启动流程。
 
+v0.3.0 的可调数量设置、Sub2API / CPA 账号导入和 API Key 接口见[服务器与账号配置](server.md)。
+
 ## 1. 下载与启动
 
 Linux 打包产物为 `mooncode-linux-x64.tar.gz`，包含 Node.js、编译后的服务、Linux 原生依赖和 Chromium。支持 Ubuntu 22.04/24.04 x64。首次在精简系统使用浏览器时，仍需要操作系统共享库：

@@ -1,20 +1,120 @@
 <!doctype html>
-<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MoonCode Web</title>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoonCode 控制台</title>
 <style>
-:root{color-scheme:dark;font:16px system-ui;background:#10141b;color:#e0e6f0}body{max-width:960px;margin:40px auto;padding:0 20px}h1{font-size:28px}small{color:#9aa9bf}section{background:#1a2230;border:1px solid #344155;border-radius:12px;padding:20px;margin:20px 0}textarea{box-sizing:border-box;width:100%;padding:14px;min-height:100px;background:#10141b;color:inherit;border:1px solid #506078;border-radius:8px;font:inherit}button{background:#81c9f5;color:#10212e;border:0;border-radius:6px;padding:10px 18px;margin:10px 8px 0 0;cursor:pointer}button:disabled{opacity:.4}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 ui-monospace,monospace}article{border-top:1px solid #344155;margin-top:16px;padding-top:12px}img{max-width:100%}#status{color:#81c9f5}
+:root{color-scheme:dark;font:16px system-ui;background:#10141b;color:#e0e6f0}body{max-width:1060px;margin:36px auto;padding:0 20px}h1{font-size:28px}h2{font-size:20px;margin-top:0}small,.hint{color:#a9b6c9;font-size:14px;line-height:1.6}section{background:#1a2230;border:1px solid #344155;border-radius:12px;padding:20px;margin:20px 0}textarea,input,select{box-sizing:border-box;width:100%;padding:10px;background:#10141b;color:inherit;border:1px solid #65758b;border-radius:6px;font:inherit}textarea{min-height:110px}button{background:#81c9f5;color:#10212e;border:0;border-radius:6px;padding:10px 16px;margin:10px 8px 0 0;cursor:pointer}button:disabled{opacity:.45;cursor:default}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 ui-monospace,monospace}img{max-width:100%}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}label{display:block;font-size:14px}label input,label select{margin-top:7px}.row{border-top:1px solid #344155;margin-top:12px;padding-top:12px;white-space:pre-wrap;overflow-wrap:anywhere}.notice{color:#81c9f5;white-space:pre-wrap}summary{cursor:pointer}a{color:#81c9f5}
 </style>
-<h1>MoonCode Web</h1><small>项目 skills · ChatGPT 网页 · 独立子任务 · 浏览器与 Linux 桌面</small>
-<section><div id="status">正在读取项目…</div><pre id="skills"></pre><button id="connect">配置 ChatGPT MCP 连接</button></section>
-<section><label for="request">发送任务</label><textarea id="request" placeholder="描述任务，主 agent 会选择项目 skill 并按需创建子任务"></textarea><button id="send">发送</button><button id="stop" disabled>停止</button></section>
+<h1>MoonCode 控制台</h1><small>项目 skills · 账号导入 · 子任务 · 浏览器与 Linux 桌面</small>
+<section id="login"><h2>连接控制台</h2><p class="hint">从部署生成的专用链接进入，或输入控制台访问密钥。</p><label>访问密钥<input id="access-token" type="password" autocomplete="off"></label><button id="unlock">连接</button></section>
+<div id="app" hidden>
+<section><h2>运行设置</h2><div class="grid">
+<label>模型来源<select id="provider"><option value="web">ChatGPT 网页登录</option><option value="cpa">导入账号（CPA）</option></select></label>
+<label>模型名称<input id="model" list="model-list" placeholder="留空时使用账号服务首个模型"><datalist id="model-list"></datalist></label>
+<label>MCP 活动链接数<input id="maxActive" type="number" min="1" max="1024" required></label>
+<label>每次请求的子任务总数<input id="maxAgents" type="number" min="0" max="256" required></label>
+<label>子任务嵌套层数<input id="maxDepth" type="number" min="0" max="16" required></label>
+<label>每个任务最多回合<input id="maxRounds" type="number" min="1" max="256" required></label>
+<label>每次请求最多动作<input id="maxActions" type="number" min="1" max="10000" required></label>
+</div><p class="hint">保存后对新任务生效，重启后保留。子任务按顺序执行；调高数量会增加处理时间和资源消耗。</p><button id="save-settings">保存设置</button><button id="load-models">读取可用模型</button><p id="settings-status" class="notice" role="status"></p></section>
+<section><h2>账号管理</h2><p class="hint">支持 CPA 账号 JSON（单个、数组、多文件）和 Sub2API 导出的 OpenAI / Claude OAuth 账号。导入账号用于 CPA 模式；网页模式使用单独保存的浏览器登录态。</p><label>选择账号 JSON 文件<input id="account-files" type="file" accept="application/json,.json" multiple></label><button id="import-accounts">导入账号</button><button id="refresh-accounts">刷新列表</button><p id="account-status" class="notice" role="status"></p><div id="accounts"></div></section>
+<section><h2>MCP 链接</h2><div class="grid"><label>链接类型<select id="link-kind"><option value="workspace">项目文件</option><option value="browser">无头浏览器</option><option value="desktop">Linux 虚拟桌面</option></select></label><label>有效期（秒，0 为持续有效）<input id="link-ttl" type="number" min="0" max="604800" value="3600"></label></div><button id="create-link">创建链接</button><button id="refresh-links">刷新链接</button><button id="connect">配置 ChatGPT MCP 连接</button><p id="link-status" class="notice" role="status"></p><div id="links"></div></section>
+<section><h2>项目与任务</h2><details><summary>已发现的项目 skills</summary><pre id="skills"></pre></details><p id="status" class="notice" role="status">正在读取项目…</p><label for="request">发送任务</label><textarea id="request" placeholder="描述任务，模型会选择项目 skill 并按需创建子任务"></textarea><button id="send">发送</button><button id="stop" disabled>停止</button></section>
 <section id="output" aria-live="polite"></section>
+</div>
 <script>
-const token=new URLSearchParams(location.hash.slice(1)).get('token')||sessionStorage.getItem('mooncode-token');
-if(token)sessionStorage.setItem('mooncode-token',token);history.replaceState(null,'',location.pathname);
-const $=id=>document.getElementById(id);let controller;const messages=new Map();
-async function api(path,body,signal){const r=await fetch(path,{method:body?'POST':'GET',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:body?JSON.stringify(body):undefined,signal});if(!r.ok)throw new Error((await r.json()).error);return r}
-function note(text){const p=document.createElement('p');p.textContent=text;$('output').append(p)}
-function event(type,value){if(type==='agent.started'){note('子任务 '+value.agentId.slice(0,8)+' · '+value.link.kind);return}if(type==='delta'||type==='replace'){let p=messages.get(value.agentId);if(!p){p=document.createElement('pre');$('output').append(p);messages.set(value.agentId,p)}p.textContent=type==='replace'?value.text:p.textContent+value.text}else if(type==='message.done'){messages.delete(value.agentId)}else if(type==='action'){note('执行 '+value.action.type+(value.action.name?' · '+value.action.name:''))}else if(type==='action.result'){for(const c of value.result?.content||[])if(c.type==='image'){const img=new Image();img.src='data:'+c.mimeType+';base64,'+c.data;$('output').append(img)}}else if(type==='error')throw new Error(value.error)}
-$('send').onclick=async()=>{controller=new AbortController();$('send').disabled=true;$('stop').disabled=false;messages.clear();$('status').textContent='正在处理任务';try{const r=await api('/api/chat',{message:$('request').value},controller.signal);const reader=r.body.getReader(),decoder=new TextDecoder();let buffer='';while(true){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,i);buffer=buffer.slice(i+2);const type=block.match(/^event: (.+)$/m)?.[1],data=block.match(/^data: (.+)$/m)?.[1];if(type&&data)event(type,JSON.parse(data))}}$('status').textContent='任务结束'}catch(e){$('status').textContent=e.name==='AbortError'?'已停止':e.message}finally{$('send').disabled=false;$('stop').disabled=true}};
-$('stop').onclick=()=>controller?.abort();$('connect').onclick=async()=>{$('connect').disabled=true;try{$('status').textContent='正在配置连接';const result=await(await api('/api/connect',{})).json();$('status').textContent='已在页面确认连接：'+result.link.url}catch(e){$('status').textContent=e.message}finally{$('connect').disabled=false}};
-api('/api/skills').then(r=>r.json()).then(s=>{$('skills').textContent=s.map(x=>x.name+' — '+x.path).join('\n')||'项目中没有发现 skills';$('status').textContent='就绪'}).catch(e=>$('status').textContent=e.message);
+const $ = id => document.getElementById(id);
+let token = new URLSearchParams(location.hash.slice(1)).get('token') || sessionStorage.getItem('mooncode-token');
+history.replaceState(null, '', location.pathname);
+let controller;
+const messages = new Map();
+const numericSettings = ['maxActive', 'maxAgents', 'maxDepth', 'maxRounds', 'maxActions'];
+async function api(path, body, signal) {
+  const response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal });
+  if (!response.ok) throw new Error((await response.json()).error);
+  return response;
+}
+async function operation(button, status, work) {
+  $(button).disabled = true; $(status).textContent = '正在处理…';
+  try { await work(); } catch (error) { $(status).textContent = error.message; }
+  finally { $(button).disabled = false; }
+}
+function row(parent, text, action, caption) {
+  const div = document.createElement('div'); div.className = 'row';
+  const p = document.createElement('div'); p.textContent = text; div.append(p);
+  if (action) { const button = document.createElement('button'); button.textContent = caption; button.onclick = async () => { button.disabled = true; try { await action(); } catch (e) { p.textContent = e.message; button.disabled = false; } }; div.append(button); }
+  $(parent).append(div);
+}
+async function accounts() {
+  const items = await (await api('/api/accounts')).json(); $('accounts').replaceChildren();
+  for (const item of items) row('accounts', `${item.label} · ${item.provider} · ${item.enabled ? '已启用' : '已停用'}${item.expiresAt ? ' · 凭据到期 ' + item.expiresAt : ''}`, async () => { await api('/api/accounts/enabled', { id: item.id, enabled: !item.enabled }); await accounts(); }, item.enabled ? '停用' : '启用');
+  if (!items.length) row('accounts', '尚未导入账号');
+}
+async function links() {
+  const items = await (await api('/api/links')).json(); $('links').replaceChildren();
+  for (const item of items) row('links', `${item.kind} · ${item.expiresAt || '持续有效'}\n${item.url}`, async () => { await api('/api/links/revoke', { id: item.id }); await links(); }, '撤销');
+  if (!items.length) row('links', '当前没有活动链接');
+}
+async function load() {
+  const result = await (await api('/api/settings')).json();
+  if (token) sessionStorage.setItem('mooncode-token', token);
+  $('login').hidden = true; $('app').hidden = false;
+  for (const key of [...numericSettings, 'provider', 'model']) $(key).value = result.settings[key];
+  $('provider').querySelector('[value=cpa]').disabled = !result.cpaConfigured;
+  $('import-accounts').disabled = !result.accountsConfigured;
+  const skills = await (await api('/api/skills')).json();
+  $('skills').textContent = skills.map(s => s.name + ' — ' + s.path).join('\n') || '项目中没有发现 skills';
+  await accounts(); await links(); $('status').textContent = '就绪';
+}
+$('unlock').onclick = () => { token = $('access-token').value.trim(); load().catch(e => { $('access-token').setCustomValidity(e.message); $('access-token').reportValidity(); }); };
+$('access-token').oninput = () => $('access-token').setCustomValidity('');
+$('save-settings').onclick = () => operation('save-settings', 'settings-status', async () => {
+  const settings = { provider: $('provider').value, model: $('model').value.trim() };
+  for (const key of numericSettings) { if (!$(key).reportValidity()) throw new Error('请检查数量设置'); settings[key] = Number($(key).value); }
+  await api('/api/settings', settings); $('settings-status').textContent = '设置已保存，对下一次任务生效';
+});
+$('load-models').onclick = () => operation('load-models', 'settings-status', async () => {
+  const models = await (await api('/api/models')).json(); $('model-list').replaceChildren();
+  for (const model of models) { const option = document.createElement('option'); option.value = model; $('model-list').append(option); }
+  if (!$('model').value && models.length) $('model').value = models[0];
+  $('settings-status').textContent = models.length ? `读取到 ${models.length} 个模型，选择后保存设置` : '账号服务还没有可用模型，请先导入并启用账号';
+});
+$('import-accounts').onclick = () => operation('import-accounts', 'account-status', async () => {
+  const files = [...$('account-files').files]; if (!files.length) throw new Error('请先选择账号 JSON 文件');
+  let created = 0, updated = 0; const errors = [];
+  for (const file of files) {
+    if (file.size > 8 * 1024 * 1024) throw new Error('单个文件上限 8 MiB');
+    let data; try { data = JSON.parse(await file.text()); } catch { throw new Error('所选文件不是有效 JSON'); }
+    const result = await (await api('/api/accounts/import', data)).json(); created += result.created; updated += result.updated;
+    for (const error of result.errors) errors.push(`${file.name} 第 ${error.index} 项：${error.error}`);
+  }
+  $('account-files').value = ''; await accounts(); $('account-status').textContent = `新增 ${created}，更新 ${updated}${errors.length ? '\n' + errors.join('\n') : ''}`;
+});
+$('refresh-accounts').onclick = () => operation('refresh-accounts', 'account-status', async () => { await accounts(); $('account-status').textContent = '列表已刷新'; });
+$('create-link').onclick = () => operation('create-link', 'link-status', async () => { if (!$('link-ttl').reportValidity()) throw new Error('请检查有效期'); await api('/api/links', { kind: $('link-kind').value, ttl: Number($('link-ttl').value) }); await links(); $('link-status').textContent = '链接已创建'; });
+$('refresh-links').onclick = () => operation('refresh-links', 'link-status', async () => { await links(); $('link-status').textContent = '列表已刷新'; });
+$('connect').onclick = () => operation('connect', 'link-status', async () => { const result = await (await api('/api/connect', {})).json(); await links(); $('link-status').textContent = '已在 ChatGPT 页面确认连接：' + result.link.url; });
+function note(text) { const p = document.createElement('p'); p.textContent = text; $('output').append(p); }
+function event(type, value) {
+  if (type === 'agent.started') { note((value.parentDepth ? '子任务 ' : '主任务 ') + value.agentId.slice(0, 8) + ' · ' + value.link.kind); return; }
+  if (type === 'delta' || type === 'replace') { let p = messages.get(value.agentId); if (!p) { p = document.createElement('pre'); $('output').append(p); messages.set(value.agentId, p); } p.textContent = type === 'replace' ? value.text : p.textContent + value.text; }
+  else if (type === 'message.done') messages.delete(value.agentId);
+  else if (type === 'action') note('执行 ' + value.action.type + (value.action.name ? ' · ' + value.action.name : ''));
+  else if (type === 'action.result') { for (const c of value.result?.content || []) if (c.type === 'image') { const img = new Image(); img.alt = '工具返回的截图'; img.src = 'data:' + c.mimeType + ';base64,' + c.data; $('output').append(img); } }
+  else if (type === 'error') throw new Error(value.error);
+}
+$('send').onclick = async () => {
+  controller = new AbortController(); $('send').disabled = true; $('stop').disabled = false; messages.clear(); $('status').textContent = '正在处理任务';
+  try {
+    const response = await api('/api/chat', { message: $('request').value }, controller.signal);
+    const reader = response.body.getReader(), decoder = new TextDecoder(); let buffer = '';
+    try { while (true) { const { done, value } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); let index;
+      while ((index = buffer.indexOf('\n\n')) >= 0) { const block = buffer.slice(0, index); buffer = buffer.slice(index + 2); const type = block.match(/^event: (.+)$/m)?.[1], data = block.match(/^data: (.+)$/m)?.[1]; if (type && data) event(type, JSON.parse(data)); }
+    } } finally { await reader.cancel(); }
+    $('status').textContent = '任务结束';
+  } catch (e) { $('status').textContent = e.name === 'AbortError' ? '已停止' : e.message; }
+  finally { $('send').disabled = false; $('stop').disabled = true; links().catch(() => {}); }
+};
+$('stop').onclick = () => controller?.abort();
+if (token) load().catch(e => { $('login').hidden = false; $('app').hidden = true; $('access-token').placeholder = e.message; });
 </script></html>

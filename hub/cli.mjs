@@ -26,7 +26,7 @@ async function admin(method, path, body) {
 }
 async function main() {
   if (args.help || !command) {
-    console.log(`MoonCode Linux MCP Hub 0.2.0
+    console.log(`MoonCode Linux MCP Hub 0.3.0
 serve    --workspace PATH [--public-origin https://mcp.example.com] [--port 48271]
 create   --kind workspace|browser|desktop [--workspace PATH] [--name NAME] [--ttl SECONDS]
          [--allow-write --allow-exec]

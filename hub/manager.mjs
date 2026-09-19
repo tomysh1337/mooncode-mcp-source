@@ -16,7 +16,7 @@ export function normalizePublicOrigin(raw) {
   return url.origin;
 }
 
-export async function startHub({ port = 48271, adminPort = 0, publicOrigin, maxActive = 16, browserExecutable, log = () => {} } = {}) {
+export async function startHub({ port = 48271, host = '127.0.0.1', adminPort = 0, publicOrigin, maxActive = 16, browserExecutable, log = () => {} } = {}) {
   integer(port, 0, 65535, 'port');
   integer(adminPort, 0, 65535, 'adminPort');
   integer(maxActive, 1, 1024, 'maxActive');
@@ -81,7 +81,7 @@ export async function startHub({ port = 48271, adminPort = 0, publicOrigin, maxA
     });
     req.on('error', () => upstream.destroy());
     req.pipe(upstream);
-  }, port);
+  }, port, host);
 
   function describe(record) {
     return { id: record.id, name: record.name, kind: record.kind, workspace: record.workspace,
@@ -160,6 +160,11 @@ export async function startHub({ port = 48271, adminPort = 0, publicOrigin, maxA
   } catch (error) { clearInterval(timer); await gateway.close(); throw error; }
   let closePromise;
   return { origin: gateway.origin, adminOrigin: admin.origin, adminToken, create, revoke,
+    configure({ maxActive: value }) {
+      integer(value, 1, 1024, 'maxActive');
+      if (value < links.size + starting) throw new Error('Revoke active links before lowering this limit');
+      maxActive = value;
+    },
     list: () => [...links.values()].map(describe),
     close() {
       return closePromise ??= (async () => {

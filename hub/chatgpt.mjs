@@ -20,14 +20,18 @@ export class ChatGPTPageAdapter {
     this.active = new Set();
   }
   async start() {
-    this.context = await chromium.launchPersistentContext(this.options.profile, {
-      headless: !this.options.headed, chromiumSandbox: process.platform === 'linux',
-      executablePath: this.options.executablePath, viewport: { width: 1360, height: 900 }, acceptDownloads: false,
-    });
-    this.context.setDefaultTimeout(15000);
+    this.starting ??= (async () => {
+      this.context = await chromium.launchPersistentContext(this.options.profile, {
+        headless: !this.options.headed, chromiumSandbox: process.platform === 'linux',
+        executablePath: this.options.executablePath, viewport: { width: 1360, height: 900 }, acceptDownloads: false,
+      });
+      this.context.setDefaultTimeout(15000);
+    })().catch(error => { this.starting = undefined; throw error; });
+    await this.starting;
     return this;
   }
   async page(id) {
+    await this.start();
     if (!this.pages.has(id)) {
       const page = await this.context.newPage();
       this.pages.set(id, page);
@@ -149,5 +153,5 @@ export class ChatGPTPageAdapter {
     this.pages.delete(id);
     await page?.close();
   }
-  async close() { await this.context?.close(); }
+  async close() { await this.starting?.catch(() => {}); await this.context?.close(); }
 }
