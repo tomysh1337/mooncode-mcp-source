@@ -77,3 +77,22 @@ curl https://console.example.com/v1/models \
 建议使用单独的非 root 系统用户运行 MoonCode 和 CPA，账号和状态目录权限 0700。通过 systemd 的 `EnvironmentFile` 注入 API key。`--access-file /private/access.json` 把控制台专用链接写到 0600 文件，同时避免在服务日志打印访问密钥。状态目录保留时，服务重启后控制台访问密钥及数量设置不变；MCP 链接则需要重新创建。
 
 保留旧版本目录以便切换回滚；更新服务前先结束正在执行的任务。Linux 浏览器工具需要 Chromium 系统共享库，桌面工具另需 Xvfb、xdotool、ImageMagick。虚拟桌面不是宿主机当前登录桌面。工作区保持只读，除非启动时显式添加 `--allow-write`；命令执行再添加 `--allow-exec`。
+
+### Ubuntu 24.04 的 Chromium 用户命名空间
+
+若浏览器启动报告 `Chromium sandboxing failed`，且内核日志显示 AppArmor 对 `chrome-headless` 的 `userns_create` / `sys_admin` 拒绝，可为安装包增加专用 AppArmor 配置。以下示例适用于 root 拥有、普通服务用户只读的 `/opt/mooncode-hub/releases/` 目录；按实际安装位置修改路径。
+
+保存为 `/etc/apparmor.d/mooncode-chromium`：
+
+```text
+abi <abi/4.0>,
+include <tunables/global>
+profile mooncode-chromium /opt/mooncode-hub/releases/**/browsers/**/chrome flags=(unconfined) {
+  userns,
+}
+profile mooncode-chromium-headless /opt/mooncode-hub/releases/**/browsers/**/chrome-headless-shell flags=(unconfined) {
+  userns,
+}
+```
+
+运行 `sudo apparmor_parser -r /etc/apparmor.d/mooncode-chromium` 后重新创建浏览器链接。此配置仅为匹配的 Chromium 二进制开放其自身沙箱需要的用户命名空间，保留 `chromiumSandbox: true` 和系统全局限制。
